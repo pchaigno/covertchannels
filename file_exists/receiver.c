@@ -9,6 +9,7 @@
 #define SENDER_READY "/tmp/sender_ready"
 #define FINISHED "/tmp/finished"
 
+void create_file(char* file);
 void bit2str(int* bits, char* str, int nbLetters);
 
 int main() {
@@ -22,7 +23,7 @@ int main() {
 	gettimeofday(&tv1, NULL);
 	
 	while(!file_exists(FINISHED)) {
-		remove(READY);
+		remove(RECEIVER_READY);
 		int data = file_exists(DATA);
 		create_file(READ);
 		bits[nb] = data;

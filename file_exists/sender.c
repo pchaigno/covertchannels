@@ -9,6 +9,7 @@
 #define SENDER_READY "/tmp/sender_ready"
 #define FINISHED "/tmp/finished"
 
+void create_file(char* file);
 void writeBit(int bit);
 void str2bit(char* str, int* bits, int nbLetters);
 
@@ -28,7 +29,7 @@ int main() {
 		while(!file_exists(READ));
 
 		remove(WRITTEN);
-		create_file(READY);
+		create_file(SENDER_READY);
 		while(!file_exists(RECEIVER_READY));
 		remove(SENDER_READY);
 	}

@@ -9,6 +9,7 @@
 #define SAW_WRITING "/tmp/saw_writing"
 #define SAW_READING "/tmp/saw_reading"
 
+void create_file(char* file);
 void writeBit(int bit);
 void str2bit(char* str, int* bits, int nbLetters);
 
@@ -26,7 +27,7 @@ int main() {
 	for(i=0; i<nbLetters * 8; i++) {
 		create_file(WRITING);
 		writeBit(data[i]);
-		while(!file_exists(SAW_WRITTING));
+		while(!file_exists(SAW_WRITING));
 		remove(WRITING);
 
 		while(!file_exists(READING));

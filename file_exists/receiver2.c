@@ -9,6 +9,7 @@
 #define SAW_WRITING "/tmp/saw_writing"
 #define SAW_READING "/tmp/saw_reading"
 
+void create_file(char* file);
 void bit2str(int* bits, char* str, int nbLetters);
 
 int main() {
