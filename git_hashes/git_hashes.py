@@ -29,10 +29,12 @@ def to_spaces(string):
 	return spaces
 
 def partial_collision(message, collision, offset):
+	sha1 = str(hashlib.sha1(message.encode('utf-8')).hexdigest())
 	spaces = '0';
-	while sha1[offset: offset + len(message)] != message:
+	while sha1[offset: offset + len(collision)] != collision:
 		spaces = increment(spaces)
-		sha1 = hashlib.sha1((comment + to_spaces(spaces)).encode('utf-8')).hexdigest()
+		sha1 = hashlib.sha1((message + to_spaces(spaces)).encode('utf-8')).hexdigest()
+	return spaces
 
 if __name__ == "__main__":
 	comment = sys.argv[1]
@@ -46,7 +48,7 @@ if __name__ == "__main__":
 	print(sha1)
 
 	start_time = time.time()
-	partial_collision(comment, message, offset)
+	spaces = partial_collision(comment, message, offset)
 
 	print()
 	print("--- %s seconds ---" % (time.time() - start_time))
