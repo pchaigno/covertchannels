@@ -17,7 +17,7 @@ def increment(string):
 		new_string = '{:0{}b}'.format(int(string, 2) + 1, len(string))
 	return new_string
 
-def to_spaces(string):
+def decode(string):
 	spaces = "";
 	for bit in string:
 		if bit == '0':

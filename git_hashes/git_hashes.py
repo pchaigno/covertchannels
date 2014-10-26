@@ -1,40 +1,18 @@
 #!/usr/bin/env python3
-import sys;
-import string;
-import hashlib;
-import time;
-
-def increment(string):
-	new_string = ''
-	all_1 = True
-	for bit in string:
-		if bit == '0':
-			all_1 = False
-			break
-	if all_1:
-		new_string += '1'
-		for bit in string:
-			new_string += '0'
-	else:
-		new_string = '{:0{}b}'.format(int(string, 2) + 1, len(string))
-	return new_string
-
-def to_spaces(string):
-	spaces = "";
-	for bit in string:
-		if bit == '0':
-			spaces += " "
-		else:
-			spaces += "	"
-	return spaces
+import sys
+import string
+import hashlib
+import time
+import space_encoding
 
 def partial_collision(message, collision, offset):
 	sha1 = str(hashlib.sha1(message.encode('utf-8')).hexdigest())
-	spaces = '0';
+	encoded_spaces = '0';
 	while sha1[offset: offset + len(collision)] != collision:
-		spaces = increment(spaces)
-		sha1 = hashlib.sha1((message + to_spaces(spaces)).encode('utf-8')).hexdigest()
-	return spaces
+		encoded_spaces = space_encoding.increment(encoded_spaces)
+		spaces = space_encoding.decode(encoded_spaces)
+		sha1 = hashlib.sha1((message + spaces).encode('utf-8')).hexdigest()
+	return encoded_spaces
 
 if __name__ == "__main__":
 	comment = sys.argv[1]
@@ -48,11 +26,11 @@ if __name__ == "__main__":
 	print(sha1)
 
 	start_time = time.time()
-	spaces = partial_collision(comment, message, offset)
+	encoded_spaces = partial_collision(comment, message, offset)
 
 	print()
 	print("--- %s seconds ---" % (time.time() - start_time))
 	print()
-	print(spaces)
-	print(comment + to_spaces(spaces) + "EOL")
+	print(encoded_spaces)
+	print(comment + space_encoding.decode(encoded_spaces) + "EOL")
 	print(sha1)
