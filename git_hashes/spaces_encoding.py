@@ -17,8 +17,6 @@ def increment(string):
 		new_string = '{:0{}b}'.format(int(string, 2) + 1, len(string))
 	return new_string
 
-
-
 def to_spaces(string):
 	spaces = "";
 	for bit in string:
@@ -28,8 +26,8 @@ def to_spaces(string):
 			spaces += "	"
 	return spaces
 
-
-string = '0'
-for i in range(0, 20):
-	print(string + ":" + to_spaces(string) + "\\")
-	string = increment(string)
+if __name__ == "__main__":
+	string = '0'
+	for i in range(0, 20):
+		print(string + ":" + to_spaces(string) + "\\")
+		string = increment(string)
