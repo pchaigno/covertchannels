@@ -2,6 +2,7 @@
 import sys
 import json
 import os
+import re
 
 def dump_repository(repository):
 	os.chdir(repository)
