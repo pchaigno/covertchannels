@@ -13,7 +13,7 @@ Args:
 	collision: The hexadecimal characters to obtain in the hash.
 	offset: The offset where the hidden characters (collision) should be found in the hash.
 
-Return:
+Returns:
 	The spaces added to the commit message for the collision encoded as binary.
 """
 def partial_collision(header, message, collision, offset):
