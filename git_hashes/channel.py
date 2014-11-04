@@ -46,6 +46,8 @@ def send(source_repository_url, channel_repository_url, message):
 
 		git.commit(repository, log, message)
 	
+	git.push(repository)
+
 	os.chdir('..')
 
 
@@ -131,12 +133,19 @@ if __name__ == "__main__":
 		sys.exit(2)
 
 	channel_repository = sys.argv[1]
+	source_repository = None
 	message = None
 	if len(sys.argv) == 4
 		source_repository = sys.argv[2]
 		message = sys.argv[3]
 
-	if message == None:
+	# Check that the channel repository is an SSH link:
+	# Otherwise we won't be able to push without a password prompt.
+	if not git.is_ssh(channel_repository):
+		print("The channel repository needs to be an SSH link to a repository with the SSH key associated to your account.")
+		sys.exit(3)
+
+	if message == None or source_repository == None:
 		message = receive(channel_repository)
 		print("%s" % message)
 	else:

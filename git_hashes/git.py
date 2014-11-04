@@ -258,6 +258,23 @@ def clone_repository(url):
 	return get_name(url)
 
 
+"""Pushes the new commits to the remote repository.
+
+The link to the remote repository needs to be an SSH link.
+ie. you need to clone from an SSH link or add an SSH remote.
+Your local SSH key need to be associated to the remote git server.
+Otherwise the password will be asked and the command will fail.
+
+Args:
+	repository: The name of the folder where the repository is.
+"""
+def push(repository):
+	change_pwd = goto_repository(repository)
+	os.system("git push origin master")
+	if change_pwd:
+		os.chdir('..')
+
+
 """Gets the name of the repository.
 
 Args:
@@ -266,11 +283,28 @@ Args:
 	Returns: The name of the repository.
 """
 def get_name(url):
-	matches = re.match(r'https?:\/\/.+\/([^\/]+)(\.git)?$', url)
+	matches = re.match(r'(https?:\/\/|git@).+\/([^\/]+)(\.git)?$', url)
 	if not matches:
-		raise Exception("You need to provide a HTTP(S) link.")
+		raise Exception("You need to provide a HTTP(S) or SSH link.")
 	repository = matches.group(1)
 	return repository
+
+
+"""Checks if the URL to the repository is an SSH link.
+
+An SSH link has the format git@host:username/repo(.git)?.
+
+Args:
+	url: URL to the repository.
+
+Returns:
+	True if the url to the git repository is an SSH link.
+"""
+def is_ssh(url):
+	matches = re.match(r'git@.+:\w+\/([^\/]+)(\.git)?$', url)
+	if matches:
+		return True
+	return False
 
 
 """Gets the number of commits in a repository.
