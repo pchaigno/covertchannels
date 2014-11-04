@@ -153,9 +153,7 @@ def rebuild_repository(dump_folder, logs, repository, your_username, your_email,
 			print("Reached current date.")
 			break
 
-		# Apply the patch without displaying the command output.
-		os.system("git apply --whitespace=nowarn ../%s/%d.patch 2> /dev/null " % (dump_folder, i))
-		os.system("git add --all .")
+		apply_patch(repository, dump_folder, i)
 
 		# The values for the committer can only be changed through the environnement variables:
 		os.environ["GIT_COMMITTER_NAME"] = committer
@@ -167,9 +165,59 @@ def rebuild_repository(dump_folder, logs, repository, your_username, your_email,
 
 		# Quiet mode for the commits, only the errors are shown.
 		# allow-empty option for commits containing nothing (merge commits for example).
-		return_code = os.system("""git commit --allow-empty -q -m "%s" --author="%s <%s>" --date=%d""" % (message, author, author_email, author_date))
+		os.system("""git commit --allow-empty -q -m "%s" --author="%s <%s>" --date=%d""" % (message, author, author_email, author_date))
 
 	os.chdir('..')
+
+
+"""Applies a patch to a git repository.
+
+Adds the changes to the git tree (`git add --all .`).
+Doesn't display the command output.
+
+Args:
+	repository: The name of the folder where is the repository to patch.
+	dump_folder: Path to the folder where the patch file is.
+	patch_number: The number of the patch (patch files have the format i.patch).
+"""
+def apply_patch(repository, dump_folder, patch_number):
+	change_pwd = goto_repository(repository)
+
+	os.system("git apply --whitespace=nowarn ../%s/%d.patch 2> /dev/null " % (dump_folder, patch_number))
+	os.system("git add --all .")
+
+	if change_pwd:
+		os.chdir('..')
+
+
+"""Commits in a git repository.
+
+The information is retrieved from the git log.
+Only the commit message can be changed.
+
+Args:
+	repository: The name of the git repository.
+	log: The commit log.
+	message: The new commit message or None if none was provided.
+"""
+def commit(repository, log, message = None):
+	change_pwd = goto_repository(repository)
+
+	# The values for the committer can only be changed through the environnement variables:
+	os.environ["GIT_COMMITTER_NAME"] = log['committer']
+	os.environ["GIT_COMMITTER_EMAIL"] = log['committer-email']
+	os.environ["GIT_COMMITTER_DATE"] = str(log['committer-date'])
+
+	# Check if a new commit message was provided:
+	if message == None:
+		message = log['message']
+
+	# Quiet mode for the commits, only the errors are shown.
+	# allow-empty option for commits containing nothing (merge commits for example).
+	os.system("""git commit --allow-empty -q -m "%s" --author="%s <%s>" --date=%d""" % (message, log['author'], log['author-email'], log['author-date']))
+
+	if change_pwd:
+		os.chdir('..')
 
 
 """Gets the email addresses of the contributors of a repository.
