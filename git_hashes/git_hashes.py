@@ -11,12 +11,12 @@ Args:
 	header: The information for this commit which is encoded to generate the hash (without the commit message).
 	message: The commit message.
 	collision: The hexadecimal characters to obtain in the hash.
-	offset: The offset where the hidden characters (collision) should be found in the hash.
+	offset: The offset where the hidden characters (collision) should be found in the hash (default = 0).
 
 Returns:
 	The spaces added to the commit message for the collision encoded as binary.
 """
-def partial_collision(header, message, collision, offset):
+def partial_collision(header, message, collision, offset = 0):
 	complete_header = header + message
 	sha1 = str(hashlib.sha1(complete_header.encode('utf-8')).hexdigest())
 	encoded_spaces = '0';
@@ -26,6 +26,26 @@ def partial_collision(header, message, collision, offset):
 		complete_header = header + message + spaces
 		sha1 = hashlib.sha1(complete_header.encode('utf-8')).hexdigest()
 	return encoded_spaces
+
+
+"""Builds the input for the git hash of a commit from its log.
+
+Args:
+	tree: Hash of the current git tree.
+	log: Log of the commit, Python array with the information on the committer, author, dates and commit message.
+	parent_log: Log of the parent commit, same format.
+
+Returns:
+	The string that will be used to generate the commit hash but without the commit message at the end.
+"""
+def build_hash_input(tree, log, parent_log = None):
+	header = "tree %s\n" % tree
+	if not parent_log == None:
+		header += "parent %s\n" % parent_log['hash']
+	header += "author %s <%s> %s\n" % (log['author'], log['author-email'])
+	header += "committer %s <%s> %s\n\n" % (log['committer'], log['committer-email'])
+	hash_input = "commit %d\0%s" % (sys.getsizeof(header), header)
+	return hash_input
 
 
 """Find a partial collision on the hash of a git commit.
