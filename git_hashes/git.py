@@ -158,6 +158,75 @@ def get_contributors(repository):
 	return contributors
 
 
+"""Clones a repository.
+
+Args:
+	url: The URL to the git repository (need to be HTTP or HTTPS).
+
+Returns:
+	The folder where the repository was downloaded.
+"""
+def clone_repository(url):
+	os.system("git clone %s" % url)
+	print()
+	return get_name(url)
+
+
+"""Gets the name of the repository.
+
+Args:
+	url: URL to the repository.
+
+	Returns: The name of the repository.
+"""
+def get_name(url):
+	matches = re.match(r'https?:\/\/.+\/([^\/]+)(\.git)?$', url)
+	if not matches:
+		raise Exception("You need to provide a HTTP(S) link.")
+	repository = matches.group(1)
+	return repository
+
+
+"""Gets the number of commits in a repository.
+
+Use the command `git rev-list HEAD --count`.
+
+Args:
+	repository: The repository (name of the folder where it is).
+
+Returns:
+	The number of commits in the current branch of the repository.
+"""
+def get_nb_commits(repository):
+	òs.chdir(repository)
+	process = subprocess.Popen(('git', 'rev_list', 'HEAD', '--count'), stdout=subprocess.PIPE)
+	nb_commits = int(process.stdout.read().decode('utf-8'))
+	os.chdir('..')
+	return nb_commits
+
+
+"""Updates a repository with git pull and updates the logs.json file.
+
+Args:
+	repository: Name of the repository, should be in a folder with that name.
+
+Returns:
+	The information on the new commits as a Python array.
+"""
+def update_repository(repository):
+	# Updates the repository:
+	nb_commits = get_nb_commits(repository)
+	os.chdir(repository)
+	os.system("git pull origin master")
+	os.chdir('..')
+
+	# Retrieves the information on the new commits:
+	new_nb_commits = get_nb_commits(repository)
+	logs = dump_logs(repository)
+	nb_new_commits = new_nb_commits - nb_commits
+	return logs[len(logs) - nb_new_commits: len(logs)]
+
+
 if __name__ == "__main__":
 	if len(sys.argv) < 3:
 		print("Usage: git.py <repository> <new-name>")
@@ -172,22 +241,3 @@ if __name__ == "__main__":
 	logs = dump_logs(repository)
 	dump_commits(repository, logs)
 	rebuild_repository(repository, logs, new_repository, '', '', [], 0)
-
-
-"""Clones a repository.
-
-Args:
-	url: The URL to the git repository (need to be HTTP or HTTPS).
-
-Returns:
-	The folder where the repository was downloaded.
-"""
-def clone_repository(url):
-	os.system("git clone %s" % url)
-	print()
-
-	matches = re.match(r'https?:\/\/.+\/([^\/]+)(\.git)?$', url)
-	if not matches:
-		raise Exception("You need to provide a HTTP(S) link.")
-	repository = matches.group(1)
-	return repository
