@@ -57,7 +57,7 @@ def dump_logs(repository):
 	if change_pwd:
 		os.chdir('..')
 
-	read_logs(repository)
+	logs = read_logs(repository)
 	return logs
 
 
@@ -165,7 +165,7 @@ def rebuild_repository(dump_folder, logs, repository, your_username, your_email,
 
 		# Quiet mode for the commits, only the errors are shown.
 		# allow-empty option for commits containing nothing (merge commits for example).
-		os.system("""git commit --allow-empty -q -m "%s" --author="%s <%s>" --date=%d""" % (message, author, author_email, author_date))
+		os.system("""git commit --allow-empty --cleanup=verbatim -q -m "%s" --author="%s <%s>" --date=%d""" % (message, author, author_email, author_date))
 
 	os.chdir('..')
 
@@ -214,7 +214,7 @@ def commit(repository, log, message = None):
 
 	# Quiet mode for the commits, only the errors are shown.
 	# allow-empty option for commits containing nothing (merge commits for example).
-	os.system("""git commit --allow-empty -q -m "%s" --author="%s <%s>" --date=%d""" % (message, log['author'], log['author-email'], log['author-date']))
+	os.system("""git commit --allow-empty --cleanup=verbatim -q -m "%s" --author="%s <%s>" --date=%d""" % (message, log['author'], log['author-email'], log['author-date']))
 
 	if change_pwd:
 		os.chdir('..')
@@ -283,10 +283,10 @@ Args:
 	Returns: The name of the repository.
 """
 def get_name(url):
-	matches = re.match(r'(https?:\/\/|git@).+\/([^\/]+)(\.git)?$', url)
+	matches = re.match(r'(https?:\/\/|git@).+\/([^\/]+?)(\.git)?$', url)
 	if not matches:
 		raise Exception("You need to provide a HTTP(S) or SSH link.")
-	repository = matches.group(1)
+	repository = matches.group(2)
 	return repository
 
 
@@ -331,7 +331,7 @@ def get_nb_commits(repository):
 
 """Gets the hash of the current git tree.
 
-Uses the command `git write-tree`
+Uses the command `git write-tree`.
 Only files and folders added to git with `git add` will be considered.
 
 Args:
@@ -344,12 +344,34 @@ def get_git_tree(repository):
 	change_pwd = goto_repository(repository)
 
 	process = subprocess.Popen(('git', 'write-tree'), stdout=subprocess.PIPE)
-	tree_hash = process.stdout.read().decode('utf-8')
+	tree_hash = process.stdout.read().decode('utf-8').strip()
 
 	if change_pwd:
 		os.chdir('..')
 
 	return tree_hash
+
+
+"""Gets the hash of the last commit.
+
+Uses the command `git log --pretty=format:'%s' -n 1`.
+
+Args:
+	repository: The repository (name of the folder where it is).
+
+Returns:
+	The hash of the last commit made.
+"""
+def get_last_commit_hash(repository):
+	change_pwd = goto_repository(repository)
+
+	process = subprocess.Popen(('git', 'log', '--pretty=format:%H', '-1'), stdout=subprocess.PIPE)
+	commit_hash = process.stdout.read().decode('utf-8').strip()
+
+	if change_pwd:
+		os.chdir('..')
+
+	return commit_hash
 
 
 """Updates a repository with git pull and updates the logs.json file.

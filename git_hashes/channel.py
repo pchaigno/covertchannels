@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 import sys
+import os
 import git_hashes
 import git
 import space_encoding
 
-NB_CHARACTERS_PER_COMMIT = 3
+NB_CHARACTERS_PER_COMMIT = 2
 
 """Sends a message through the covert channel in git hashes.
 
@@ -17,13 +18,13 @@ def send(source_repository_url, channel_repository_url, message):
 	source_repository = git.get_name(source_repository_url)
 	logs = []
 	if not os.path.exists(source_repository):
-		logs = init_source(source_repository)
+		logs = init_source(source_repository_url)
 	else:
 		logs = read_logs(repository)
 
 	channel_repository = git.get_name(channel_repository_url)
 	if not os.path.exists(channel_repository):
-		init_channel(channel_repository)
+		init_channel(channel_repository_url)
 
 	# Change current working directory:
 	os.chdir(channel_repository)
@@ -36,17 +37,15 @@ def send(source_repository_url, channel_repository_url, message):
 
 		# Computes the new commit message to get the right hash:
 		tree = git.get_git_tree(channel_repository)
-		hash_input = ''
-		if i == 0:
-			hash_input = git_hashes.build_hash_input(tree, log)
-		else:
-			hash_input = git_hashes.build_hash_input(tree, log, logs[i-1])
-		encoded_spaces = git_hashes.partial_collision(hash_input, log['message'], fragments[i])
+		parent_hash = None
+		if i != 0:
+			parent_hash = git.get_last_commit_hash(channel_repository)
+		encoded_spaces = git_hashes.partial_collision(tree, log, parent_hash, fragments[i])
 		message = log['message'] + space_encoding.decode(encoded_spaces)
 
-		git.commit(repository, log, message)
-	
-	git.push(repository)
+		git.commit(channel_repository, log, message)
+
+	git.push(channel_repository)
 
 	os.chdir('..')
 
@@ -77,7 +76,7 @@ Returns:
 def receive(repository_url):
 	repository = git.get_name(repository_url)
 	if not os.path.exists(repository):
-		init_channel(repository)
+		init_channel(repository_url)
 
 	new_logs = git.update_repository(repository)
 	message = ''
@@ -92,7 +91,7 @@ def receive(repository_url):
 Clones the repository and extract the pach files and the commit messages.
 
 Args:
-	source_repository: The source repository.
+	source_repository: The source repository as an URL.
 
 Returns:
 	The git logs of the source repository
@@ -135,7 +134,7 @@ if __name__ == "__main__":
 	channel_repository = sys.argv[1]
 	source_repository = None
 	message = None
-	if len(sys.argv) == 4
+	if len(sys.argv) == 4:
 		source_repository = sys.argv[2]
 		message = sys.argv[3]
 

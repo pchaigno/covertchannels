@@ -8,43 +8,62 @@ import space_encoding
 """Find a partial collision on the hash of a git commit.
 
 Args:
-	header: The information for this commit which is encoded to generate the hash (without the commit message).
-	message: The commit message.
+	tree: Hash of the current git tree.
+	log: The information on the commit as a Python array.
+	parent_hash: The hash of the parent commit or None if there is no parent.
 	collision: The hexadecimal characters to obtain in the hash.
 	offset: The offset where the hidden characters (collision) should be found in the hash (default = 0).
 
 Returns:
 	The spaces added to the commit message for the collision encoded as binary.
 """
-def partial_collision(header, message, collision, offset = 0):
-	complete_header = header + message
-	sha1 = str(hashlib.sha1(complete_header.encode('utf-8')).hexdigest())
+def partial_collision(tree, log, parent_hash, collision, offset = 0):
+	commit_information = build_commit_information(tree, log, parent_hash)
+	hash_input = build_git_hash_input(commit_information, log['message'])
+	sha1 = str(hashlib.sha1(hash_input.encode('utf-8')).hexdigest())
 	encoded_spaces = '0';
 	while sha1[offset: offset + len(collision)] != collision:
 		encoded_spaces = space_encoding.increment(encoded_spaces)
 		spaces = space_encoding.decode(encoded_spaces)
-		complete_header = header + message + spaces
-		sha1 = hashlib.sha1(complete_header.encode('utf-8')).hexdigest()
+		hash_input = build_git_hash_input(commit_information, log['message'] + spaces)
+		sha1 = hashlib.sha1(hash_input.encode('utf-8')).hexdigest()
 	return encoded_spaces
 
 
-"""Builds the input for the git hash of a commit from its log.
+"""Builds the information on a commit from its log.
+
+This information will be used to generate the commit hash.
 
 Args:
 	tree: Hash of the current git tree.
 	log: Log of the commit, Python array with the information on the committer, author, dates and commit message.
-	parent_log: Log of the parent commit, same format.
+	parent_hash: Hash of the parent commit or None if no parent.
 
 Returns:
-	The string that will be used to generate the commit hash but without the commit message at the end.
+	The commit information without the commit message.
+	It's the string that will be used to generate the commit hash but
+	without the commit message at the end and the size in bytes at the beginning.
 """
-def build_hash_input(tree, log, parent_log = None):
-	header = "tree %s\n" % tree
-	if not parent_log == None:
-		header += "parent %s\n" % parent_log['hash']
-	header += "author %s <%s> %s\n" % (log['author'], log['author-email'])
-	header += "committer %s <%s> %s\n\n" % (log['committer'], log['committer-email'])
-	hash_input = "commit %d\0%s" % (sys.getsizeof(header), header)
+def build_commit_information(tree, log, parent_hash = None):
+	hash_input = "tree %s\n" % tree
+	if not parent_hash == None:
+		hash_input += "parent %s\n" % parent_hash
+	hash_input += "author %s <%s> %s -0500\n" % (log['author'], log['author-email'], str(log['author-date']))
+	hash_input += "committer %s <%s> %s -0500\n\n" % (log['committer'], log['committer-email'], str(log['committer-date']))
+	return hash_input
+
+
+"""Builds the string that will be used to generate the git hash.
+
+The commit information and the commit message are concatenated together and preceded by their size in bytes.
+
+Args:
+	commit_information: The commit information without the commit message at the end. See build_commit_information.
+	commit_message: The commit message.
+"""
+def build_git_hash_input(commit_information, commit_message):
+	end_hash_input = "%s%s\n" % (commit_information, commit_message)
+	hash_input = "commit %s\0%s" % (len(end_hash_input), end_hash_input)
 	return hash_input
 
 
