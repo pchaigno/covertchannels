@@ -6,6 +6,19 @@ import json
 import subprocess
 import time
 
+"""Error raised when a git repository is not found
+
+Attributes:
+	repository: Name of the git repository.
+"""
+class RepositoryNotFoundError(Exception):
+	def __init__(self, repository):
+		self.repository = repository
+
+	def __str__(self):
+		return "The repository %s could not be found." % self.repository
+
+
 """Dumps the logs from a git repository as a JSON document.
 
 The call to this function must be made from the parent directory of the directory of the repository.
@@ -19,7 +32,7 @@ Returns:
 	The logs as a Python array.
 """
 def dump_logs(repository):
-	os.chdir(repository)
+	change_pwd = goto_repository(repository)
 
 	# Dumps the git logs in a JSON document.
 	os.system("""git log --reverse --pretty=format:'{%n  "hash": "%H",%n  "author": "%an",%n  "author-email": "%ae",%n  "author-date": %at,%n  "committer": "%cn",%n  "committer-email": "%ce",%n  "committer-date": %ct,%n  "message": "%s"%n},' $@ | perl -pe 'BEGIN{print "["}; END{print "]\n"}' | perl -pe 's/},]/}]/' > logs.json""")
@@ -41,12 +54,32 @@ def dump_logs(repository):
 	json_escaped.close()
 	os.system("mv logs-escaped.json logs.json")
 
-	# Reads the git logs from the JSON document.
+	if change_pwd:
+		os.chdir('..')
+
+	read_logs(repository)
+	return logs
+
+
+"""Read the logs from the JSON document.
+
+The logs need to be dumped first (ie. before the call to this function).
+
+Args:
+	repository: The name of the folder where the repository is.
+
+Returns:
+	The git logs of the repository as a Python array.
+"""
+def read_logs(repository):
+	change_pwd = goto_repository(repository)
+
 	json_data = open("logs.json")
 	logs = json.load(json_data)
 	json_data.close()
 	
-	os.chdir('..')
+	if change_pwd:
+		os.chdir('..')
 
 	return logs
 
@@ -61,14 +94,15 @@ Args:
 	logs: The git logs as a Python array.
 """
 def dump_commits(repository, logs):
-	os.chdir(repository)
+	change_pwd = goto_repository(repository)
 
 	# Uses the binary option to be able to dump and then apply the images and other binary files:
 	os.system("git show --binary %s > 0.patch" % (logs[0]['hash']))
 	for i in range(1, len(logs)):
 		result = os.system("git diff --binary %s %s > %d.patch" % (logs[i-1]['hash'], logs[i]['hash'], i))
 
-	os.chdir('..')
+	if change_pwd:
+		os.chdir('..')
 
 
 """Rebuild a git repository from patches and with some modifications.
@@ -130,11 +164,11 @@ def rebuild_repository(dump_folder, logs, repository, your_username, your_email,
 
 		# Need to escape the double quotes for the commit message.
 		message = log['message'].replace('"', '\\"')
-		
+
 		# Quiet mode for the commits, only the errors are shown.
 		# allow-empty option for commits containing nothing (merge commits for example).
 		return_code = os.system("""git commit --allow-empty -q -m "%s" --author="%s <%s>" --date=%d""" % (message, author, author_email, author_date))
-		
+
 	os.chdir('..')
 
 
@@ -150,11 +184,15 @@ Returns:
 	The list of contributors' email addresses.
 """
 def get_contributors(repository):
-	os.chdir(repository)
+	change_pwd = goto_repository(repository)
+
 	process1 = subprocess.Popen(('git', 'log', '--format=%ae'), stdout=subprocess.PIPE)
 	process2 = subprocess.Popen(('sort', '-u'), stdin=process1.stdout, stdout=subprocess.PIPE)
 	contributors = process2.stdout.read().decode('utf-8').split("\n")
-	os.chdir('..')
+
+	if change_pwd:
+		os.chdir('..')
+
 	return contributors
 
 
@@ -198,11 +236,38 @@ Returns:
 	The number of commits in the current branch of the repository.
 """
 def get_nb_commits(repository):
-	òs.chdir(repository)
+	change_pwd = goto_repository(repository)
+
 	process = subprocess.Popen(('git', 'rev_list', 'HEAD', '--count'), stdout=subprocess.PIPE)
 	nb_commits = int(process.stdout.read().decode('utf-8'))
-	os.chdir('..')
+
+	if change_pwd:
+		os.chdir('..')
+
 	return nb_commits
+
+
+"""Gets the hash of the current git tree.
+
+Uses the command `git write-tree`
+Only files and folders added to git with `git add` will be considered.
+
+Args:
+	repository: The repository (name of the folder where it is).
+
+Returns:
+	The hash of the current git tree.
+"""
+def get_git_tree(repository):
+	change_pwd = goto_repository(repository)
+
+	process = subprocess.Popen(('git', 'write-tree'), stdout=subprocess.PIPE)
+	tree_hash = process.stdout.read().decode('utf-8')
+
+	if change_pwd:
+		os.chdir('..')
+
+	return tree_hash
 
 
 """Updates a repository with git pull and updates the logs.json file.
@@ -216,15 +281,37 @@ Returns:
 def update_repository(repository):
 	# Updates the repository:
 	nb_commits = get_nb_commits(repository)
-	os.chdir(repository)
+	change_pwd = goto_repository(repository)
 	os.system("git pull origin master")
-	os.chdir('..')
+	if change_pwd:
+		os.chdir('..')
 
 	# Retrieves the information on the new commits:
 	new_nb_commits = get_nb_commits(repository)
 	logs = dump_logs(repository)
 	nb_new_commits = new_nb_commits - nb_commits
 	return logs[len(logs) - nb_new_commits: len(logs)]
+
+
+"""Change the current working directory.
+
+If we are already in the git repository, don't change anything.
+
+Args:
+	The new current working directory, a git repository.
+
+Returns:
+	True if the working directory was changed.
+	If true is returned it means we should leave it (ie. return to the parent directory)
+	at the end of the operations.
+"""
+def goto_repository(repository):
+	if os.path.exists(repository):
+		os.chdir(repository)
+		return True
+	elif os.system("git rev-parse") != 0:
+		raise RepositoryNotFoundError(repository)
+	return False
 
 
 if __name__ == "__main__":
