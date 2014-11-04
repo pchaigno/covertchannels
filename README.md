@@ -5,3 +5,4 @@ A set of covert channels created for the Covert Communications class at Rocheste
 
 
 - [file_exists](https://github.com/pchaigno/CovertChannels/tree/master/file_exists/) - Encodes bits by creating/removing a temporary file. 2.24KiB/s with the second version.
+- [git_hashes](https://github.com/pchaigno/CovertChannels/tree/master/git_hashes/) - Sends messages through the hashes of git commits.
