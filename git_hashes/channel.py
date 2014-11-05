@@ -20,7 +20,7 @@ def send(source_repository_url, channel_repository_url, message):
 	if not os.path.exists(source_repository):
 		logs = init_source(source_repository_url)
 	else:
-		logs = git.read_logs(repository)
+		logs = git.read_logs(source_repository)
 
 	channel_repository = git.get_name(channel_repository_url)
 	if not os.path.exists(channel_repository):
@@ -30,8 +30,9 @@ def send(source_repository_url, channel_repository_url, message):
 	os.chdir(channel_repository)
 	source_repository = "../%s" % source_repository
 
+	nb_commits = git.get_nb_commits(channel_repository)
 	fragments = fragment_message(message)
-	for i in range(0, len(fragments)):
+	for i in range(nb_commits, nb_commits + len(fragments)):
 		log = logs[i]
 		git.apply_patch(channel_repository, source_repository, i)
 
@@ -40,7 +41,7 @@ def send(source_repository_url, channel_repository_url, message):
 		parent_hash = None
 		if i != 0:
 			parent_hash = git.get_last_commit_hash(channel_repository)
-		encoded_spaces = git_hashes.partial_collision(tree, log, parent_hash, fragments[i])
+		encoded_spaces = git_hashes.partial_collision(tree, log, parent_hash, fragments[i - nb_commits])
 		message = log['message'] + space_encoding.decode(encoded_spaces)
 
 		git.commit(channel_repository, log, message)
