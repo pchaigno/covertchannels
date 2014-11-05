@@ -165,6 +165,7 @@ def rebuild_repository(dump_folder, logs, repository, your_username, your_email,
 
 		# Quiet mode for the commits, only the errors are shown.
 		# allow-empty option for commits containing nothing (merge commits for example).
+		# cleanup=verbatim to keep the spaces at the end of the commit message.
 		os.system("""git commit --allow-empty --cleanup=verbatim -q -m "%s" --author="%s <%s>" --date=%d""" % (message, author, author_email, author_date))
 
 	os.chdir('..')
@@ -214,6 +215,7 @@ def commit(repository, log, message = None):
 
 	# Quiet mode for the commits, only the errors are shown.
 	# allow-empty option for commits containing nothing (merge commits for example).
+	# cleanup=verbatim to keep the spaces at the end of the commit message.
 	os.system("""git commit --allow-empty --cleanup=verbatim -q -m "%s" --author="%s <%s>" --date=%d""" % (message, log['author'], log['author-email'], log['author-date']))
 
 	if change_pwd:

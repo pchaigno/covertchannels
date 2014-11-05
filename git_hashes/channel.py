@@ -20,7 +20,7 @@ def send(source_repository_url, channel_repository_url, message):
 	if not os.path.exists(source_repository):
 		logs = init_source(source_repository_url)
 	else:
-		logs = read_logs(repository)
+		logs = git.read_logs(repository)
 
 	channel_repository = git.get_name(channel_repository_url)
 	if not os.path.exists(channel_repository):
@@ -75,14 +75,16 @@ Returns:
 """
 def receive(repository_url):
 	repository = git.get_name(repository_url)
+	new_logs = []
 	if not os.path.exists(repository):
-		init_channel(repository_url)
+		new_logs = init_channel(repository_url)
+	else:
+		new_logs = git.update_repository(repository)
 
-	new_logs = git.update_repository(repository)
 	message = ''
 	for log in new_logs:
-		if len(log['message']) > NB_CHARACTERS_PER_COMMIT:
-			message += log['message'][0:NB_CHARACTERS_PER_COMMIT]
+		if len(log['hash']) > NB_CHARACTERS_PER_COMMIT:
+			message += log['hash'][0:NB_CHARACTERS_PER_COMMIT]
 	return message
 
 
@@ -94,7 +96,7 @@ Args:
 	source_repository: The source repository as an URL.
 
 Returns:
-	The git logs of the source repository
+	The git logs of the source repository.
 """
 def init_source(source_repository):
 	repository_name = git.clone_repository(source_repository)
@@ -111,12 +113,12 @@ Args:
 	channel_repository: URL to the repository to exchange messages.
 
 Returns:
-	The name of the repository.
+	The git logs of the channel repository.
 """
 def init_channel(channel_repository):
 	repository_name = git.clone_repository(channel_repository)
-	git.dump_logs(repository_name)
-	return repository_name
+	logs = git.dump_logs(repository_name)
+	return logs
 
 
 """Exchanges messages through a git repository using the hashes.
