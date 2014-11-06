@@ -322,8 +322,9 @@ Returns:
 def get_nb_commits(repository):
 	change_pwd = goto_repository(repository)
 
-	process = subprocess.Popen(('git', 'rev-list', 'HEAD', '--count'), stdout=subprocess.PIPE)
-	nb_commits = int(process.stdout.read().decode('utf-8'))
+	process1 = subprocess.Popen(('git', 'log', '--pretty=oneline'), stdout=subprocess.PIPE)
+	process2 = subprocess.Popen(('wc', '-l'), stdin=process1.stdout, stdout=subprocess.PIPE)
+	nb_commits = int(process2.stdout.read().decode('utf-8'))
 
 	if change_pwd:
 		os.chdir('..')
