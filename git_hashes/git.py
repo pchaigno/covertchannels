@@ -303,7 +303,7 @@ Returns:
 	True if the url to the git repository is an SSH link.
 """
 def is_ssh(url):
-	matches = re.match(r'git@.+:\w+\/([^\/]+)(\.git)?$', url)
+	matches = re.match(r'git@.+:([^\/]+)\/([^\/]+)(\.git)?$', url)
 	if matches:
 		return True
 	return False
