@@ -149,6 +149,6 @@ if __name__ == "__main__":
 
 	if message == None or source_repository == None:
 		message = receive(channel_repository)
-		print("%s" % message)
+		print("message: %s" % message)
 	else:
 		send(source_repository, channel_repository, message)

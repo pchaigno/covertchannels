@@ -255,7 +255,7 @@ Returns:
 	The folder where the repository was downloaded.
 """
 def clone_repository(url):
-	os.system("git clone %s" % url)
+	os.system("git clone -q %s" % url)
 	print()
 	return get_name(url)
 
@@ -272,7 +272,7 @@ Args:
 """
 def push(repository):
 	change_pwd = goto_repository(repository)
-	os.system("git push origin master")
+	os.system("git push -q origin master")
 	if change_pwd:
 		os.chdir('..')
 
@@ -311,7 +311,7 @@ def is_ssh(url):
 
 """Gets the number of commits in a repository.
 
-Use the command `git rev-list HEAD --count`.
+Use the command `git log --pretty=online | wc -l`.
 
 Args:
 	repository: The repository (name of the folder where it is).
@@ -322,7 +322,7 @@ Returns:
 def get_nb_commits(repository):
 	change_pwd = goto_repository(repository)
 
-	process1 = subprocess.Popen(('git', 'log', '--pretty=oneline'), stdout=subprocess.PIPE)
+	process1 = subprocess.Popen(('git', 'log', '--all', '--pretty=oneline'), stdout=subprocess.PIPE)
 	process2 = subprocess.Popen(('wc', '-l'), stdin=process1.stdout, stdout=subprocess.PIPE)
 	nb_commits = int(process2.stdout.read().decode('utf-8'))
 
