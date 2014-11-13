@@ -16,7 +16,7 @@ Returns:
 	The new encoded string.
 """
 def increment(string):
-        return '{:0{}b}'.format(int(string, 2) + 1, len(string))
+	return '{:0{}b}'.format(int(string, 2) + 1, len(string))
 
 
 """Decodes a string of encoded spaces.
@@ -41,16 +41,16 @@ def decode(string):
 
 
 if __name__ == "__main__":
-        string = '0'
-        for i in range(0, 20):
-                print(string + ":" + decode(string) + "\\")
-                string = increment(string)
+	string = '0'
+	for i in range(0, 20):
+		print(string + ":" + decode(string) + "\\")
+		string = increment(string)
 
-        print ("Unit test for space_encoding: should return no falses")
-        print(increment('100') == '101')
-        print(increment('1111') == '10000')
-        print(increment('1101') == '1110')
-        print(increment('1101') != '1111')        
-        print(decode('10') == '\t ')
-        print(decode('10101') == '\t \t \t')
-        print(decode('1101') != ' \t\t \t')
+	print ("Unit test for space_encoding: should return no falses")
+	print(increment('100') == '101')
+	print(increment('1111') == '10000')
+	print(increment('1101') == '1110')
+	print(increment('1101') != '1111')        
+	print(decode('10') == '\t ')
+	print(decode('10101') == '\t \t \t')
+	print(decode('1101') != ' \t\t \t')
