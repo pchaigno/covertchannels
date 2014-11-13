@@ -34,6 +34,8 @@ def send(source_repository_url, channel_repository_url, message):
 	fragments = fragment_message(message)
 	for i in range(nb_commits, nb_commits + len(fragments)):
 		log = logs[i]
+		fragment = fragments[i - nb_commits]
+
 		git.apply_patch(channel_repository, source_repository, i)
 
 		# Computes the new commit message to get the right hash:
@@ -41,10 +43,16 @@ def send(source_repository_url, channel_repository_url, message):
 		parent_hash = None
 		if i != 0:
 			parent_hash = git.get_last_commit_hash(channel_repository)
-		encoded_spaces = git_hashes.partial_collision(tree, log, parent_hash, fragments[i - nb_commits])
+		encoded_spaces = git_hashes.partial_collision(tree, log, parent_hash, fragment)
 		message = log['message'] + space_encoding.decode(encoded_spaces)
 
 		git.commit(channel_repository, log, message)
+
+		# Checks commit hash:
+		git_hash = git.get_last_commit_hash(channel_repository)
+		if not fragment == git_hash[0:2]:
+			print("Fragment %s not found in commit %s ('%s')" % (fragment, git_hash, log['message']))
+			sys.exit(4)
 
 	git.push(channel_repository)
 
