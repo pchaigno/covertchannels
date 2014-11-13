@@ -35,11 +35,12 @@ def dump_logs(repository):
 	change_pwd = goto_repository(repository)
 
 	# Dumps the git logs in a JSON document.
-	os.system("""git log --reverse --pretty=format:'{%n  "hash": "%H",%n  "author": "%an",%n  "author-email": "%ae",%n  "author-date": %at,%n  "committer": "%cn",%n  "committer-email": "%ce",%n  "committer-date": %ct,%n  "message": "%s"%n},' $@ | perl -pe 'BEGIN{print "["}; END{print "]\n"}' | perl -pe 's/},]/}]/' > logs.json""")
+	log_file = "../%s_logs.json" % repository
+	os.system("""git log --reverse --pretty=format:'{%n  "hash": "%H",%n  "author": "%an",%n  "author-email": "%ae",%n  "author-date": %at,%n  "committer": "%cn",%n  "committer-email": "%ce",%n  "committer-date": %ct,%n  "message": "%s"%n},' $@ | perl -pe 'BEGIN{print "["}; END{print "]\n"}' | perl -pe 's/},]/}]/' > """ + log_file)
 
 	# Rewrites the escaped JSON document in a new file.
 	# Then, the original JSON document in overwritten with the new one:
-	json_data = open('logs.json')
+	json_data = open(log_file)
 	json_escaped = open('logs-escaped.json', 'w')
 	for line in json_data:
 		matches = re.match(r'^  "message": "(.+)"$', line)
@@ -52,7 +53,7 @@ def dump_logs(repository):
 		json_escaped.write(line)
 	json_data.close()
 	json_escaped.close()
-	os.system("mv logs-escaped.json logs.json")
+	os.system("mv logs-escaped.json %s" % log_file)
 
 	if change_pwd:
 		os.chdir('..')
@@ -74,7 +75,8 @@ Returns:
 def read_logs(repository):
 	change_pwd = goto_repository(repository)
 
-	json_data = open("logs.json")
+	log_file = "../%s_logs.json" % repository
+	json_data = open(log_file)
 	logs = json.load(json_data)
 	json_data.close()
 	
@@ -184,7 +186,7 @@ Args:
 def apply_patch(repository, dump_folder, patch_number):
 	change_pwd = goto_repository(repository)
 
-	os.system("git apply --whitespace=nowarn ../%s/%d.patch 2> /dev/null " % (dump_folder, patch_number))
+	os.system("git apply --whitespace=nowarn ../%s/%d.patch" % (dump_folder, patch_number))
 	os.system("git add --all .")
 
 	if change_pwd:
