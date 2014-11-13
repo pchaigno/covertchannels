@@ -28,7 +28,6 @@ def send(source_repository_url, channel_repository_url, message):
 
 	# Change current working directory:
 	os.chdir(channel_repository)
-	source_repository = "../%s" % source_repository
 
 	nb_commits = git.get_nb_commits(channel_repository)
 	fragments = fragment_message(message)
