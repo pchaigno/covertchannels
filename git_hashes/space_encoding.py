@@ -16,6 +16,8 @@ Returns:
 	The new encoded string.
 """
 def increment(string):
+	if string == '':
+		return '0'
 	return '{:0{}b}'.format(int(string, 2) + 1, len(string))
 
 
