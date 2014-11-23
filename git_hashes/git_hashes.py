@@ -63,7 +63,7 @@ Args:
 """
 def build_git_hash_input(commit_information, commit_message):
 	end_hash_input = "%s%s\n" % (commit_information, commit_message)
-	hash_input = "commit %s\0%s" % (len(end_hash_input), end_hash_input)
+	hash_input = "commit %s\0%s" % (len(end_hash_input.encode()), end_hash_input)
 	return hash_input
 
 
