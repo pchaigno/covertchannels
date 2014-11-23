@@ -1,49 +1,11 @@
 #!/usr/bin/env python3
 
-from Crypto.Cipher import AES
 import os
 import sys
 import git
 import channel
-
-# the block size for the cipher object; must be 16, 24, or 32 for AES
-BLOCK_SIZE = 16
-
-# the character used for padding. 
-PADDING = ' '
-    
-"""Encrypt a message using AES
-
-Args:
-	message: the message to encrypt
-	key: the secret key to use in the symmetric cipher. Must be BLOCK_SIZE bytes long.
-"""
-def encrypt_message(message, key):
-    # Pad the message. This is used to ensure that the message encrypted is always a multiple of BLOCK_SIZE
-    message = message + (BLOCK_SIZE - len(message) % BLOCK_SIZE) * PADDING
-
-    # Encrypt the message
-    cipher = AES.new(key)
-    encoded_messsage = cipher.encrypt(message);
-
-    return encoded_messsage
-
-"""Decrypt a message using AES
-
-Args:
-	message: the message to decrypt
-	key: the secret key to use in the symmetric cipher. Must be BLOCK_SIZE bytes long.
-"""
-def decrypt_message(message, key):
-    # Remove the padding
-    message = message.rstrip()
-
-    # Decrypt the message
-    cipher = AES.new(key)
-    decoded_messsage = cipher.decrypt(message);
-
-    return decoded_messsage
- 
+import argparse
+import xor_cipher as cipher
  
 """Encrypt the message and communicate using git repository
 
@@ -54,31 +16,46 @@ Args:
         key: the key used for encryption
 """
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: channel.py <channel-repository> [<source-repository> <message>] <key>")
-        sys.exit(2)
+    parser = argparse.ArgumentParser(description="Covert communication using git repositories")
+    parser.add_argument("key", help="Key to encrypt the message", type=str)    
+    parser.add_argument("channel", help="The repository used to transmit the message", type=str)
+    parser.add_argument("source", help="The repository used to generate the commits", type=str, nargs='?')
+    parser.add_argument("message", help="The message to transmit", type=str, nargs='?', default='')
+    parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
+    args = parser.parse_args()
 
-    channel_repository = sys.argv[1]
-    source_repository = None
-    message = None
-    if len(sys.argv) == 5:
-        source_repository = sys.argv[2]
-        message = sys.argv[3]
-        key = sys.argv[4]
-        message =  encrypt_message(message, key)
-        
-        # Check that the channel repository is an SSH link:
-        # Otherwise we won't be able to push without a password prompt.
+    channel_repository = args.channel
+    source_repository = args.source
+    message = args.message
+    key = args.key
+
+    # Check that the channel repository is an SSH link:
+    # Otherwise we won't be able to push without a password prompt.
     if not git.is_ssh(channel_repository):
         print("The channel repository needs to be an SSH link to a repository with the SSH key associated to your account.")
         sys.exit(3)
-
-    if message == None or source_repository == None:
-        key = sys.argv[2]
+    
+    # Decrypt
+    if message == '':
+        if args.verbose:
+            print("Receiving message using " + channel_repository)
         message = channel.receive(channel_repository)
-        message = decrypt_message(message, key)
-        print("%s" % message.decode())
+        if args.verbose:
+            print("Encrypted message: " + message)
+        mh = cipher.hash_received_to_hexl(message)
+        k = cipher.genkey(len(mh), key)
+        m = cipher.xor_hex(mh, k)
+        decrypted_message = cipher.hex_to_string(m)
+        print("%s" % decrypted_message)
+
+    # Encrypt
     else:
+        if args.verbose:
+            print("Sending message using " + channel_repository)
+        hexl = cipher.string_to_hex(message)
+        k = cipher.genkey(len(hexl), key)
+        mx = cipher.xor_hex(k, hexl)
+        encrypted_message = cipher.generate_message_to_transmit(mx)
+        if args.verbose:
+            print("Encrypted message: " + encrypted_message)
         channel.send(source_repository, channel_repository, message)
-
-
