@@ -1,3 +1,11 @@
 language: python
 python:
   - 3.4
+
+branches:
+  only:
+    - tests
+
+notifications:
+  email:
+    - dxc9849@rit.edu
