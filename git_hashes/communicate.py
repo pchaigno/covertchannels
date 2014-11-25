@@ -58,4 +58,4 @@ if __name__ == "__main__":
         encrypted_message = cipher.generate_message_to_transmit(mx)
         if args.verbose:
             print("Encrypted message: " + encrypted_message)
-        channel.send(source_repository, channel_repository, message)
+        channel.send(source_repository, channel_repository, encrypted_message)
